@@ -39,6 +39,7 @@
 ```
 git clone https://github.com/misis-programming2024-2025/misis2024f-24-17-Daurtsev-E-A.git
 cd misis2024f-24-17-Daurtsev-E-A
+mkdir data
 ```  
 
 Скопировтаь переменные среды
