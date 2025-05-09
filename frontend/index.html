@@ -1,0 +1,260 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Файловое хранилище</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 400px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-color: var(--secondary);
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .cat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .cat-overlay.show {
+            display: flex;
+        }
+
+        .cat-image {
+            width: 300px;
+            border-radius: 15px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" id="loginTab">Вход</div>
+            <div class="tab" id="registerTab">Регистрация</div>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Имя пользователя</label>
+                <input type="text" id="loginName" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit">Войти</button>
+            <div id="loginMessage" class="message"></div>
+        </form>
+
+        <form id="registerForm" style="display: none;">
+            <div class="form-group">
+                <label>Имя пользователя</label>
+                <input type="text" id="registerName" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit">Зарегистрироваться</button>
+            <div id="registerMessage" class="message"></div>
+        </form>
+    </div>
+
+    <div class="cat-overlay" id="catOverlay">
+        <img src="https://cataas.com/cat" class="cat-image" alt="Котик">
+        <h2 style="color: white; margin-top: 1rem;">Регистрация успешна!</h2>
+    </div>
+
+    <script>
+        document.getElementById('loginTab').addEventListener('click', () => {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+        });
+
+        document.getElementById('registerTab').addEventListener('click', () => {
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('registerName').value,
+                password: document.getElementById('registerPassword').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/file-storage-api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.status === 201) {
+                    document.getElementById('catOverlay').classList.add('show');
+                    setTimeout(() => {
+                        document.getElementById('catOverlay').classList.remove('show');
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('registerMessage').textContent = error.detail;
+                    document.getElementById('registerMessage').classList.add('error');
+                }
+            } catch (err) {
+                document.getElementById('registerMessage').textContent = 'Ошибка соединения';
+                document.getElementById('registerMessage').classList.add('error');
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('loginName').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/file-storage-api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    window.location.href = 'files.html';
+                } else {
+                    const message = document.getElementById('loginMessage');
+                    message.textContent = 'Неверное имя пользователя или пароль';
+                    message.className = 'message error';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const message = document.getElementById('loginMessage');
+                message.textContent = 'Ошибка при входе';
+                message.className = 'message error';
+            }
+        });
+    </script>
+</body>
+</html>

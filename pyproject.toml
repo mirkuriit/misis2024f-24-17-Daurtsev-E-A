@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "file-storage-api"
+version = "0.1.0"
+description = ""
+authors = ["mirkuriit <e.daurtcev@dianapp.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pydantic = "^2.11.4"
+fastapi = "^0.115.12"
+alembic = "^1.15.2"
+python-dotenv = "^1.1.0"
+sqlalchemy = "^2.0.40"
+asyncpg = "^0.30.0"
+psycopg = "^3.2.7"
+uvicorn = "^0.34.2"
+python-multipart = "^0.0.20"
+authx = "^1.4.2"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.26.0"
+httpx = "^0.28.1"
+pytest-cov = "^6.1.1"
+
+[tool.poetry.scripts]
+init-db = "file_storage_api.db.initial:create_db"
+drop-db = "file_storage_api.db.initial:drop_db"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

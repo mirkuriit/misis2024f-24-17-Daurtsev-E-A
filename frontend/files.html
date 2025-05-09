@@ -1,0 +1,456 @@
+<!-- files.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои файлы</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            background: #f5f6fa;
+        }
+
+        header {
+            background: var(--primary);     
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .file-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .file-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .file-details {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-link {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        .delete-btn {
+            color: #e74c3c;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .delete-btn:hover {
+            text-decoration: underline;
+        }
+
+        .file-actions {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .upload-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--secondary);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 400px;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .code-block {
+            background: #f5f6fa;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 1rem 0;
+            position: relative;
+            word-break: break-all;
+        }
+
+        .code-block a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        .code-block a:hover {
+            text-decoration: underline;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Файловое хранилище</h1>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+    </header>
+
+    <div class="container">
+        <div class="file-list" id="fileList">
+            <!-- Файлы будут загружены здесь -->
+        </div>
+    </div>
+
+    <div id="uploadForm" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+        <h2>Загрузить файл</h2>
+        <form id="fileUploadForm">
+            <div class="form-group">
+                <label>Файл</label>
+                <input type="file" id="fileInput" required>
+            </div>
+            <div class="form-group">
+                <label>Срок хранения (в днях)</label>
+                <input type="number" id="liveTime" min="1" value="7" required>
+            </div>
+            <input type="hidden" id="userId">
+            <button type="submit">Загрузить</button>
+            <button type="button" onclick="hideUploadForm()">Отмена</button>
+        </form>
+    </div>
+
+    <button class="upload-btn" onclick="showUploadForm()">+ Добавить файл</button>
+
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal" id="downloadModal">
+        <button class="close-btn" onclick="hideDownloadModal()">&times;</button>
+        <h2>Скачать файл</h2>
+        <p>Ссылка на файл:</p>
+        <div class="code-block">
+            <a href="#" id="fileLink" target="_blank"></a>
+            <button class="copy-btn" onclick="copyToClipboard('fileLink')">Копировать</button>
+        </div>
+        <p>Команда для скачивания:</p>
+        <div class="code-block">
+            <span id="wgetCommand"></span>
+            <button class="copy-btn" onclick="copyToClipboard('wgetCommand')">Копировать</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadFiles() {
+            try {
+                const userId = getCurrentUser();
+                if (!userId) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                console.log('Attempting to fetch files for user:', userId);
+                const response = await fetch(`http://localhost:8000/file-storage-api/files/user/${userId}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const files = await response.json();
+                    console.log('Received files:', files);
+                    renderFiles(files);
+                } else if (response.status === 401) {
+                    console.log('Authentication failed, redirecting to login...');
+                    window.location.href = 'index.html';
+                } else {
+                    console.error('Failed to load files:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error details:', errorText);
+                    alert('Ошибка при загрузке файлов. Пожалуйста, попробуйте снова.');
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                if (error.message.includes('Failed to fetch')) {
+                    window.location.href = 'index.html';
+                }
+                alert('Ошибка при загрузке файлов. Пожалуйста, попробуйте снова.');
+            }
+        }
+
+        function formatLiveTime(isoDuration) {
+            // Remove 'P' prefix and get the number of days
+            const days = parseInt(isoDuration.replace('P', '').replace('D', ''));
+            if (days === 1) {
+                return '1 день';
+            } else if (days >= 2 && days <= 4) {
+                return `${days} дня`;
+            } else {
+                return `${days} дней`;
+            }
+        }
+
+        function renderFiles(files) {
+            console.log('Rendering files:', files);
+            const container = document.getElementById('fileList');
+            
+            if (!files || files.length === 0) {
+                container.innerHTML = '<div class="file-card"><div class="file-name">У вас пока нет файлов</div></div>';
+                return;
+            }
+            
+            container.innerHTML = files.map(file => {
+                const createdDate = new Date(file.created_at);
+                const formattedDate = createdDate.toLocaleString('ru-RU', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="file-card">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">
+                            Размер: ${(file.bytesize / 1024).toFixed(2)} KB<br>
+                            Загружен: ${formattedDate}<br>
+                            Срок хранения: ${formatLiveTime(file.live_time)}
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-link" onclick="showDownloadModal('${file.link}')">Скачать</button>
+                            <button class="delete-btn" onclick="deleteFile('${file.id}')">Удалить</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function logout() {
+            document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            window.location.href = 'index.html';
+        }
+
+        function getCurrentUser() {
+            try {
+                const cookies = document.cookie.split(';');
+                const accessToken = cookies.find(cookie => cookie.trim().startsWith('my_access_token='));
+                
+                if (!accessToken) {
+                    throw new Error('No access token found');
+                }
+
+                // Extract the token value
+                const token = accessToken.split('=')[1];
+                
+                // Decode the JWT token (it's in format: header.payload.signature)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                // The user ID is in the 'sub' claim of the JWT
+                const userId = payload.sub;
+                document.getElementById('userId').value = userId;
+                return userId;
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                window.location.href = 'index.html';
+                return null;
+            }
+        }
+
+        const userId = getCurrentUser();
+        if (userId) {
+            loadFiles();
+        }
+
+        function showUploadForm() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                alert('Ошибка авторизации. Пожалуйста, войдите снова.');
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('uploadForm').style.display = 'block';
+        }
+
+        function hideUploadForm() {
+            document.getElementById('uploadForm').style.display = 'none';
+        }
+
+        document.getElementById('fileUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                alert('Ошибка авторизации. Пожалуйста, войдите снова.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            const fileInput = document.getElementById('fileInput');
+            const liveTime = document.getElementById('liveTime').value;
+            
+            const formData = new FormData();
+            formData.append('file_upload', fileInput.files[0]);
+            formData.append('live_time', `${liveTime} days`);
+            formData.append('is_available', true);  // Always set to true
+            formData.append('user_id', userId);
+            
+            try {
+                const response = await fetch('http://localhost:8000/file-storage-api/files', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    hideUploadForm();
+                    loadFiles(); // Reload the file list
+                } else {
+                    const errorData = await response.json();
+                    console.error('Upload failed:', errorData);
+                    alert('Ошибка при загрузке файла: ' + (errorData.detail || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Ошибка при загрузке файла. Пожалуйста, попробуйте снова.');
+            }
+        });
+
+        async function deleteFile(fileId) {
+            if (!confirm('Вы уверены, что хотите удалить этот файл?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8000/file-storage-api/files/${fileId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    loadFiles(); // Перезагружаем список файлов
+                } else {
+                    const errorData = await response.json();
+                    console.error('Delete failed:', errorData);
+                    alert('Ошибка при удалении файла: ' + (errorData.detail || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Ошибка при удалении файла. Пожалуйста, попробуйте снова.');
+            }
+        }
+
+        function showDownloadModal(fileLink) {
+            const modal = document.getElementById('downloadModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            const fileLinkElement = document.getElementById('fileLink');
+            const wgetCommandElement = document.getElementById('wgetCommand');
+
+            fileLinkElement.textContent = fileLink;
+            fileLinkElement.href = fileLink;
+            wgetCommandElement.textContent = `wget '${fileLink}'`;
+
+            modal.style.display = 'block';
+            backdrop.style.display = 'block';
+        }
+
+        function hideDownloadModal() {
+            const modal = document.getElementById('downloadModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            modal.style.display = 'none';
+            backdrop.style.display = 'none';
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = element.nextElementSibling;
+                const originalText = btn.textContent;
+                btn.textContent = 'Скопировано!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
